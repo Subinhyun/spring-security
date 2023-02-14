@@ -1,6 +1,7 @@
 package org.example.jwt;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -14,6 +15,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    @Autowired
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
@@ -29,10 +31,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 boolean validateRefreshToken = jwtTokenProvider.validateToken(refreshToken);
                 boolean isRefreshToken = jwtTokenProvider.existsRefreshToken(refreshToken);
                 if (validateRefreshToken && isRefreshToken) {
-                    String email = jwtTokenProvider.getUserPk(refreshToken);
-                    /// 이메일로 권한정보 받아오기
-//                    List<String> roles = jwtTokenProvider.getRoles(email);
-                    String newAccessToken = jwtTokenProvider.createAccessToken(email);
+                    String user = jwtTokenProvider.getUserPk(refreshToken);
+                    String newAccessToken = jwtTokenProvider.createAccessToken(user);
                     jwtTokenProvider.setHeaderAccessToken(response, newAccessToken);
                     this.setAuthentication(newAccessToken);
                 }

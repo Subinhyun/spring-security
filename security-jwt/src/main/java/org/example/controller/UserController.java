@@ -14,14 +14,20 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
-
 @RestController
 @RequiredArgsConstructor
 public class UserController {
+
     private final UserService userService;
+
     private final UserRepository userRepository;
+
     private final JwtTokenProvider jwtTokenProvider;
+
     private final RefreshTokenRepository refreshTokenRepository;
+//
+//    private final RefreshToken refreshToken;
+
 
     @PostMapping("/signup")
     public UserRequestDto register (@RequestBody UserRequestDto requestDto) {
@@ -38,17 +44,15 @@ public class UserController {
             throw new IllegalArgumentException("잘못된 비밀번호입니다.");
         }
 
-//        Token token = jwtTokenProvider.getToken(member.getUsername());
-//        refreshToken.updateValue(String.valueOf(token));
-//        refreshTokenRepository.save(new RefreshToken(refreshToken));
-
-        return jwtTokenProvider.getToken(member.getUsername());
+        Token token = jwtTokenProvider.getToken(member.getUsername());
+        userService.login(member, token);
+        return token;
     }
 
     @GetMapping("/userinfo")
     @ResponseBody
     public String getUserInfo(@AuthenticationPrincipal PrincipalDetails userDetails){
-        if(userDetails!=null){
+        if(userDetails != null){ //
             System.out.println("로그인 된 상태입니다.");
             return userDetails.getUser().getUsername();
         }

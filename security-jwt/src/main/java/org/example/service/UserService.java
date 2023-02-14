@@ -1,19 +1,24 @@
 package org.example.service;
 
 import lombok.RequiredArgsConstructor;
-import org.example.model.User;
-import org.example.model.UserRequestDto;
+import org.example.model.*;
+import org.example.repository.RefreshTokenRepository;
 import org.example.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshToken refreshToken;
 
     public boolean checkSignupValueCondition(UserRequestDto requestDto){
         String username = requestDto.getUsername();
@@ -52,4 +57,16 @@ public class UserService {
         userRepository.save(user);
         return requestDto;
     }
+
+
+    public void login(User member, Token token) {
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.id = member.getUsername();
+        refreshToken.value = token.getRefreshToken();
+        if (refreshTokenRepository.existsByValue(member.getUsername())) {
+            refreshTokenRepository.deleteById(member.getUsername());
+        }
+        refreshTokenRepository.save(refreshToken);
+    }
+
 }

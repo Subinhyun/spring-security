@@ -7,6 +7,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
 import org.example.repository.RefreshTokenRepository;
 import org.example.model.Token;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -26,8 +27,11 @@ public class JwtTokenProvider {
     private long tokenValidTime = 30 * 60 * 1000;
     private long refreshTokenValidTime = 7 * 60 * 60 * 1000;
     private long accessTokenValidTime = 30 * 60 * 1000;
+
+    @Autowired
     private final UserDetailsService userDetailsService;
 
+    @Autowired
     private final RefreshTokenRepository refreshTokenRepository;
 
     protected void init(@Value("${jwt.secret}") String secretKey) {
@@ -91,7 +95,7 @@ public class JwtTokenProvider {
     }
 
     public boolean existsRefreshToken(String refreshToken) {
-        return refreshTokenRepository.existsByToken(refreshToken);
+        return refreshTokenRepository.existsByValue(refreshToken);
     }
 
     public void setHeaderAccessToken(HttpServletResponse response, String accessToken) {
