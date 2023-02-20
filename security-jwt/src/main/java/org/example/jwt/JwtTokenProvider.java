@@ -24,7 +24,7 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
     private static String key = "c3ByaW5nLWJvb3Qtc2VjdXJpdHktand0LXR1dG9yaWFsLWppd29vbi1zcHJpbmctYm9vdC1zZWN1cml0eS1qd3QtdHV0b3JpYWwK";;
-    private long tokenValidTime = 30 * 60 * 1000;
+//    private long tokenValidTime = 30 * 60 * 1000;
     private long refreshTokenValidTime = 7 * 60 * 60 * 1000;
     private long accessTokenValidTime = 30 * 60 * 1000;
 
@@ -69,9 +69,22 @@ public class JwtTokenProvider {
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
+
     public String getUserPk(String token) {
         return Jwts.parser().setSigningKey(key).parseClaimsJws(token).getBody().getSubject();
     }
+
+    public Long getExpiration(String accessToken) {
+        Date expiration = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(accessToken).getBody().getExpiration();
+        long now = new Date().getTime();
+        return (expiration.getTime() - now);
+    }
+
+//    public Long getExpiration(String accessToken) {
+//        Date expiration = Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(accessToken).getBody().getExpiration();
+////        long now = new Date().getTime();
+//        return expiration.getTime();
+//    }
 
     public String resolveAccessToken(HttpServletRequest request) {
         if (request.getHeader("authorization") != null)
@@ -99,8 +112,6 @@ public class JwtTokenProvider {
     }
 
     public void setHeaderAccessToken(HttpServletResponse response, String accessToken) {
-        response.setHeader("authorization", "bearer "+ accessToken);
+        response.setHeader("authorization", "bearer " + accessToken);
     }
-
-
 }

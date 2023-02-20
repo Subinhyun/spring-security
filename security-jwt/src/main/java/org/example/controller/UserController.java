@@ -3,16 +3,19 @@ package org.example.controller;
 import lombok.RequiredArgsConstructor;
 import org.example.jwt.JwtTokenProvider;
 import org.example.model.*;
-import org.example.repository.RefreshTokenRepository;
+import org.example.repository.LogoutAccessTokenRepository;
 import org.example.repository.UserRepository;
 import org.example.service.PrincipalDetails;
 import org.example.service.UserService;
-import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,9 +27,7 @@ public class UserController {
 
     private final JwtTokenProvider jwtTokenProvider;
 
-    private final RefreshTokenRepository refreshTokenRepository;
-//
-//    private final RefreshToken refreshToken;
+    private final LogoutAccessTokenRepository logoutAccessTokenRepository;
 
 
     @PostMapping("/signup")
@@ -51,12 +52,39 @@ public class UserController {
 
     @GetMapping("/userinfo")
     @ResponseBody
-    public String getUserInfo(@AuthenticationPrincipal PrincipalDetails userDetails){
-        if(userDetails != null){ //
+    @Transactional
+    public String getUserInfo(@AuthenticationPrincipal PrincipalDetails userDetails, HttpServletRequest request){
+        String accessToken = jwtTokenProvider.resolveAccessToken(request);
+
+        if (logoutAccessTokenRepository.existsByUsername(userDetails.getUsername())) {
+            if (logoutAccessTokenRepository.existsByAccessToken(accessToken)) {
+                throw new IllegalArgumentException("로그아웃 된 상태입니다.");
+            }
+            logoutAccessTokenRepository.deleteByUsername(userDetails.getUser().getUsername());
+        }
+
+        if (userDetails != null){
             System.out.println("로그인 된 상태입니다.");
             return userDetails.getUser().getUsername();
         }
+
         return "확인 불가";
+    }
+
+    @RequestMapping(value = "/logout", method = {RequestMethod.GET, RequestMethod.POST})
+    public String logout(@AuthenticationPrincipal PrincipalDetails userDetails, HttpServletRequest request) {
+
+        String accessToken = jwtTokenProvider.resolveAccessToken(request);
+//        String refreshToken = jwtTokenProvider.resolveRefreshToken(request);
+
+        Authentication authentication = jwtTokenProvider.getAuthentication(accessToken);
+
+        if (userDetails == null) {
+            throw new IllegalArgumentException("로그아웃 된 상태입니다.");
+        }
+
+        userService.logout(authentication, accessToken);
+        return "로그아웃";
     }
 
 }
